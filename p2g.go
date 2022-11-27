@@ -43,6 +43,7 @@ var proxyUrls = []string{
 type P2G struct {
 	allProxies     map[string]int
 	currentProxies map[string]int
+	ProxyCount     int
 }
 
 func requestProxies(url string) string {
@@ -167,12 +168,18 @@ func (p2g *P2G) Get(requestUrl string) (*http.Response, error) {
 func (p2g *P2G) SetupProxies() {
 	proxies := getProxies()
 	proxies = deDupe(proxies)
-	color.Green("Found %d unique proxies", len(proxies))
 
+	p2g.ProxyCount = len(proxies)
 	p2g.allProxies = make(map[string]int)
 	p2g.currentProxies = make(map[string]int)
+
 	for _, proxy := range proxies {
 		p2g.allProxies[proxy] = 0
 		p2g.currentProxies[proxy] = 0
 	}
+}
+
+func NewP2G() *P2G {
+	p2g := &P2G{}
+	return p2g
 }
