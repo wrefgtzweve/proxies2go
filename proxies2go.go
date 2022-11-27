@@ -1,4 +1,4 @@
-package proxies2go
+package p2g
 
 import (
 	"io/ioutil"
