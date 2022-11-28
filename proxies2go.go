@@ -1,6 +1,7 @@
 package p2g
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -8,8 +9,6 @@ import (
 	"regexp"
 	"sync"
 	"time"
-
-	"github.com/fatih/color"
 )
 
 var mutex = &sync.Mutex{}
@@ -78,15 +77,6 @@ func getProxies() []string {
 
 			proxySlice := getProxiesFromUrl(url)
 
-			var proxyCount = len(proxySlice)
-			if proxyCount > 100 {
-				color.Green("Found %d proxies from %s", len(proxySlice), url)
-			} else if proxyCount > 0 {
-				color.Yellow("Found %d proxies from %s", len(proxySlice), url)
-			} else {
-				color.Red("Found %d proxies from %s", len(proxySlice), url)
-			}
-
 			mutex.Lock()
 			defer mutex.Unlock()
 			proxies = append(proxies, proxySlice...)
@@ -122,13 +112,14 @@ func (p2g *P2G) getUseableProxy() string {
 	mutex.Lock()
 	defer mutex.Unlock()
 	if len(p2g.currentProxies) == 0 {
-		color.Red("No proxies left, refilling...")
 		if len(p2g.allProxies) == 0 {
-			color.Red("No proxies found, getting proxies...")
+			fmt.Println("No proxies found, getting proxies...")
 			p2g.allProxies = make(map[string]int)
 			for _, proxy := range p2g.GetProxyList() {
 				p2g.allProxies[proxy] = 0
 			}
+		} else {
+			fmt.Println("No proxies left, refilling...")
 		}
 		for proxy := range p2g.allProxies {
 			p2g.currentProxies[proxy] = 0
