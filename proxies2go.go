@@ -62,28 +62,9 @@ func requestProxies(url string) string {
 	return string(body)
 }
 
-func parseProxies(proxyList string) []string {
-	proxies := proxyRegex.FindAllString(proxyList, -1)
-	return proxies
-}
-
-func deDupe(proxies []string) []string {
-	keyMap := make(map[string]bool)
-	for _, proxy := range proxies {
-		keyMap[proxy] = true
-	}
-
-	var result []string
-	for proxy := range keyMap {
-		result = append(result, proxy)
-	}
-
-	return result
-}
-
 func getProxiesFromUrl(url string) []string {
 	proxyList := requestProxies(url)
-	proxies := parseProxies(proxyList)
+	proxies := proxyRegex.FindAllString(proxyList, -1)
 	return proxies
 }
 
@@ -116,11 +97,39 @@ func getProxies() []string {
 	return proxies
 }
 
+func deDupe(proxies []string) []string {
+	keyMap := make(map[string]bool)
+	for _, proxy := range proxies {
+		keyMap[proxy] = true
+	}
+
+	var result []string
+	for proxy := range keyMap {
+		result = append(result, proxy)
+	}
+
+	return result
+}
+
+func (p2g *P2G) GetProxyList() []string {
+	proxies := getProxies()
+	proxies = deDupe(proxies)
+
+	return proxies
+}
+
 func (p2g *P2G) getUseableProxy() string {
 	mutex.Lock()
 	defer mutex.Unlock()
 	if len(p2g.currentProxies) == 0 {
 		color.Red("No proxies left, refilling...")
+		if len(p2g.allProxies) == 0 {
+			color.Red("No proxies found, getting proxies...")
+			p2g.allProxies = make(map[string]int)
+			for _, proxy := range p2g.GetProxyList() {
+				p2g.allProxies[proxy] = 0
+			}
+		}
 		for proxy := range p2g.allProxies {
 			p2g.currentProxies[proxy] = 0
 		}
@@ -166,8 +175,7 @@ func (p2g *P2G) Get(requestUrl string) (*http.Response, error) {
 }
 
 func (p2g *P2G) SetupProxies() {
-	proxies := getProxies()
-	proxies = deDupe(proxies)
+	proxies := p2g.GetProxyList()
 
 	p2g.ProxyCount = len(proxies)
 	p2g.allProxies = make(map[string]int)
